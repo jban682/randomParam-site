@@ -27,34 +27,15 @@
 import guessNum from "../e2e/pages/guessNumber.page"
 
 const getLocator = new guessNum().getLocators
-const getFlipCard = new guessNum().getFlipCardLocators
-
 
 Cypress.Commands.add('gameBegin', (inputValue) => {
-  //cy.step('Enter the correct number `12`.')
+  //cy.step('Enter the a number.')
   getLocator.getGuessField()
     .type(inputValue);
 
   //cy.step('Click the "GUESS" button.')
   getLocator.getGuessResetButton()
     .click();
-});
-
-
-Cypress.Commands.add('verifyGuessHistory', (guesses) => {
-  //view guesses list
-  getLocator.getGuessesBox()
-    .should('be.visible');
-
-  getLocator.getGuessesList()
-    .children()
-    .should('have.length', guesses.length);
-
-  guesses.forEach((guess, index) => {
-    //view counter attempt
-    getLocator.getGuessesList()
-      .children().eq(index).should('have.text', String(guess))
-  });
 });
 
 

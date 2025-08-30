@@ -1,4 +1,4 @@
-///< reference typrs="Cypress"/>
+///< reference type="cypress"/>
 import guessNum from "../pages/guessNumber.page"
 import 'cypress-plugin-steps'
 
@@ -129,12 +129,17 @@ describe('guessNumberPage', () => {
       .should('be.disabled');
 
     cy.step('Verify the guess is added to the previous guesses list.')
-    cy.verifyGuessHistory([12]);
+    getLocator.getGuessesList()
+      .children()
+      .should('have.length', '1');
+
+    getLocator.getGuessesList()
+      .children()
+      .eq(0)
+      .should('have.text', '12');
 
     cy.step('Verify the attempts counter increments (e.g., to "1 / 10").')
-    getLocator.getAttemptsCount()
-      .find('span.rotateAttempt')
-      .should('contain', 1);
+    cy.get('.rotateAttempt').should('contain', 1);
   });
 
 
@@ -155,7 +160,14 @@ describe('guessNumberPage', () => {
       .focus();
 
     cy.step('Verify the guess is added to the previous guesses list.')
-    cy.verifyGuessHistory([5]);
+    getLocator.getGuessesList()
+      .children()
+      .should('have.length', '1');
+
+    getLocator.getGuessesList()
+      .children()
+      .eq(0)
+      .should('have.text', '5');
 
     cy.step('Verify the attempts counter increments (e.g., to "1 / 10").')
     getLocator.getAttemptsCount()
@@ -179,13 +191,20 @@ describe('guessNumberPage', () => {
       .should('be.empty').focus();
 
     cy.step('Verify the guess is added to the previous guesses list.')
-    cy.verifyGuessHistory([20]);
+    getLocator.getGuessesList()
+      .children()
+      .should('have.length', '1');
+
+    getLocator.getGuessesList()
+      .children()
+      .eq(0)
+      .should('have.text', '20');
 
     cy.step('Verify the attempts counter increments (e.g., to "1 / 10").')
     getLocator.getAttemptsCount()
       .find('span.rotateAttempt')
       .should('contain', 1);
-  })
+  });
 
 
   it('[TS888-006]: Validate Input Boundary (Lower): Number 1', () => {
@@ -321,13 +340,13 @@ describe('guessNumberPage', () => {
 
     for (let i = 0; i < inputGuesses.length; i++) {
       const guess = inputGuesses[i];
-      const attemptsCount = i + 1;
+      let attemptsCount = i;
 
       cy.gameBegin(guess);
+      attemptsCount++;
 
       // Verify the attempts counter increments with each loop
-      getLocator.getAttemptsCount()
-        .find('span.rotateAttempt').should('contain', attemptsCount);
+      cy.get('.rotateAttempt').should('contain', attemptsCount);
     }
 
     cy.step('Verify on the 10th attempt, the card flips, revealing the secret number (12).')
@@ -415,13 +434,14 @@ describe('guessNumberPage', () => {
 
     for (let i = 0; i < inputGuesses.length; i++) {
       const guess = inputGuesses[i];
-      const attemptsCount = i + 1;
+      let attemptsCount = i;
 
       cy.gameBegin(guess);
 
+      attemptsCount++;
+
       // Verify the attempts counter increments with each loop
-      getLocator.getAttemptsCount()
-        .find('span.rotateAttempt').should('contain', attemptsCount);
+      cy.get('.rotateAttempt').should('contain', attemptsCount);
     }
 
     cy.step('Verify on the 10th attempt, the card flips, revealing the secret number (12).')
@@ -497,15 +517,13 @@ describe('guessNumberPage', () => {
     cy.gameBegin(0);
 
     cy.step('Verify attempts counter remains unchanged from initial state (e.g., " / 10").')
-    getLocator.getAttemptsCount()
-      .find('span.rotateAttempt').should('contain', 0);
+    cy.get('.rotateAttempt').should('contain', 0);
 
     cy.step('Enter `60` (invalid). Click "GUESS".')
     cy.gameBegin(60);
 
     cy.step('Verify the attempts counter does **not** increment.')
-    getLocator.getAttemptsCount()
-      .find('span.rotateAttempt').should('contain', 0);
+    cy.get('.rotateAttempt').should('contain', 0);
 
     cy.step('Enter `5` (valid). Click "GUESS".')
     cy.step('Verify attempts counter now reads "1 / 10".')
@@ -517,17 +535,23 @@ describe('guessNumberPage', () => {
     const validInput = [5, 30, 12]
 
     for (let i = 0; i < validInput.length; i++) {
-      const attemptsCount = i + 1;
+      let attemptsCount = i;
 
       cy.gameBegin(validInput[i]);
 
+      cy.step('Verify the guess was added to the history list')
+      getLocator.getGuessesList()
+        .children().eq(i).should('have.text', String(validInput[i]))
+
+      attemptsCount++;
       // Verify the attempts counter increments with each loop
-      getLocator.getAttemptsCount()
-        .find('span.rotateAttempt').should('contain', attemptsCount);
+      cy.get('.rotateAttempt').should('contain', attemptsCount);
+      getLocator.getGuessesList()
+        .children()
+        .should('have.length', attemptsCount);
+
     }
 
-    cy.step('Verify the guess was added to the history list')
-    cy.verifyGuessHistory(validInput);
   });
 
 
@@ -535,22 +559,18 @@ describe('guessNumberPage', () => {
     cy.section('TS888-016: Verify Sequential Guesses with Mixed Feedback')
     cy.step(' Guess `5`.')
     cy.gameBegin(5);
-
     cy.step('Verify message is "My number is larger.\n Try Again!".')
     getLocator.getGuessErrormessage()
       .should('have.text', 'My number is larger. Try Again!');
-
     cy.step('Verify the input field is cleared and retains focus.')
     getLocator.getGuessField()
       .should('be.empty').focus();
 
     cy.step('Guess `20`.')
     cy.gameBegin(20);
-
     cy.step('Verify message is "My number is larger.\n Try Again!".')
     getLocator.getGuessErrormessage()
       .should('have.text', 'My number is smaller. Try Again!');
-
     cy.step('Verify the input field is cleared and retains focus.')
     getLocator.getGuessField()
       .should('be.empty')
@@ -558,14 +578,31 @@ describe('guessNumberPage', () => {
 
     cy.step('Guess `12`.')
     cy.gameBegin(12);
-
     cy.step(' Verify message is "Congratulations! You guessed the number!".')
     getLocator.getGuessErrormessage()
       .should('be.visible')
       .and('contain.text', 'Congratulations! You guessed the number!');
 
     cy.step('Verify previous guesses list contains `5`, `20`, and `12` in that order.')
-    cy.verifyGuessHistory([5, 20, 12]);
+    getLocator.getGuessesList()
+      .children()
+      .should('have.length', '3');
+
+    getLocator.getGuessesList()
+      .children()
+      .eq(0)
+      .should('have.text', '5');
+
+    getLocator.getGuessesList()
+      .children()
+      .eq(1)
+      .should('have.text', '20');
+
+    getLocator.getGuessesList()
+      .children()
+      .eq(2)
+      .should('have.text', '12');
+
 
     cy.step('Verify final attempts counter is `3 / 10`.')
     getLocator.getAttemptsCount().should('have.text', '3 / 10');
@@ -590,7 +627,10 @@ describe('guessNumberPage', () => {
       .focus();
 
     //cy.step('Verify the guess is added to the previous guesses list.')
-    cy.verifyGuessHistory([1]);
+    getLocator.getGuessesList()
+      .children()
+      .eq(0)
+      .should('have.text', '1');
 
     // cy.step('Verify the attempts counter increments (e.g., to "1 / 10").')
     getLocator.getAttemptsCount()
@@ -645,7 +685,24 @@ describe('guessNumberPage', () => {
 
     cy.step('Verify the guess was added to the history list')
     cy.step(' Verify the `#guesses` container displays the guesses in the order: `25`, `10`, `12`.')
-    cy.verifyGuessHistory([25, 10, 12]);
+    getLocator.getGuessesList()
+      .children()
+      .should('have.length', '3');
+
+    getLocator.getGuessesList()
+      .children()
+      .eq(0)
+      .should('have.text', '25');
+
+    getLocator.getGuessesList()
+      .children()
+      .eq(1)
+      .should('have.text', '10');
+
+    getLocator.getGuessesList()
+      .children()
+      .eq(2)
+      .should('have.text', '12');
   });
 
 
@@ -653,7 +710,6 @@ describe('guessNumberPage', () => {
     cy.section('TS888-019: Verify Mixed Out-of-Range and Valid Attempts Count')
     cy.step('Enter `0` (invalid).')
     cy.gameBegin(0);
-
     cy.step('Expect error message.')
     getLocator.getGuessErrormessage()
       .should('have.text', 'ERROR:Input should be between 1 & 50')
@@ -663,10 +719,8 @@ describe('guessNumberPage', () => {
     getLocator.getAttemptsCount()
       .find('span.rotateAttempt').should('contain', 0);
 
-
     cy.step('Enter `60` (invalid).')
     cy.gameBegin(60);
-
     cy.step('Expect error message.')
     getLocator.getGuessErrormessage()
       .should('have.text', 'ERROR:Input should be between 1 & 50')
@@ -680,15 +734,19 @@ describe('guessNumberPage', () => {
     cy.step('Attempts counter increments only for these valid guesses → should read **"3 / 10"**.')
     const inputData = [5, 30, 12]
 
-    for (let i = 0; i < inputData.length; i++) {
-      cy.gameBegin(inputData[i]);
+    inputData.forEach((input, index) => {
+      let attemptsCount = index;
 
-      const attemptsCount = i + 1;
+      cy.gameBegin(input);
 
+      attemptsCount++;
       // Verify the attempts counter increments with each loop
-      getLocator.getAttemptsCount()
-        .find('span.rotateAttempt').should('contain', attemptsCount);
-    }
+      cy.get('.rotateAttempt').should('contain', attemptsCount);
+      getLocator.getGuessesList()
+        .children()
+        .should('have.length', attemptsCount);
+
+    })
   });
 
 
